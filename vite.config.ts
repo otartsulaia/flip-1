@@ -4,6 +4,7 @@ import { defineConfig } from 'vite'
 import { VitePluginFonts } from 'vite-plugin-fonts'
 
 export default defineConfig(() => ({
+  base: '/flip-1/',
   server: { port: 4080 },
   resolve: { alias: { '@src': path.resolve(__dirname, './src') } },
   plugins: [
