@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Prospect, ProspectStatus, STATUS_LABELS } from '../types';
+import { Prospect, ProspectStatus, STATUS_LABELS, TYPE_LABELS } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { SmallButton } from '../styles';
 
@@ -16,11 +16,43 @@ const CardHeader = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 12px;
+  gap: 12px;
+`;
+
+const CompanyInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+`;
+
+const LogoImg = styled.img`
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: white;
+  object-fit: contain;
+  flex-shrink: 0;
+`;
+
+const LogoPlaceholder = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: #9ca3af;
+  flex-shrink: 0;
 `;
 
 const CompanyName = styled.h3`
   font-size: 16px;
-  margin: 0 0 4px 0;
+  margin: 0 0 2px 0;
   color: white;
 `;
 
@@ -30,10 +62,25 @@ const ContactName = styled.p`
   margin: 0;
 `;
 
+const Tags = styled.div`
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+`;
+
+const Tag = styled.span`
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+  color: #d1d5db;
+`;
+
 const InfoRow = styled.div`
   display: flex;
   gap: 16px;
-  margin: 12px 0;
+  margin: 10px 0;
   flex-wrap: wrap;
 `;
 
@@ -45,10 +92,31 @@ const InfoItem = styled.div`
   gap: 6px;
 `;
 
+const FeeRow = styled.div`
+  display: flex;
+  gap: 20px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+`;
+
+const FeeItem = styled.div`
+  font-size: 13px;
+  span {
+    color: #6b7280;
+    font-size: 11px;
+  }
+`;
+
+const FeeValue = styled.div`
+  color: #10b981;
+  font-weight: 600;
+  font-size: 15px;
+`;
+
 const Notes = styled.p`
   font-size: 13px;
   color: #9ca3af;
-  margin: 12px 0;
+  margin: 10px 0;
   padding: 10px;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
@@ -88,22 +156,39 @@ interface ProspectCardProps {
 
 export function ProspectCard({ prospect, onEdit, onDelete, onStatusChange }: ProspectCardProps) {
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return new Date(dateStr).toLocaleDateString('ka-GE', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
   };
 
+  const initial = prospect.companyName.charAt(0).toUpperCase();
+
   return (
     <Card>
       <CardHeader>
-        <div>
-          <CompanyName>{prospect.companyName}</CompanyName>
-          {prospect.contactName && <ContactName>{prospect.contactName}</ContactName>}
-        </div>
+        <CompanyInfo>
+          {prospect.logoUrl ? (
+            <LogoImg
+              src={prospect.logoUrl}
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          ) : (
+            <LogoPlaceholder>{initial}</LogoPlaceholder>
+          )}
+          <div>
+            <CompanyName>{prospect.companyName}</CompanyName>
+            {prospect.contactName && <ContactName>{prospect.contactName}</ContactName>}
+          </div>
+        </CompanyInfo>
         <StatusBadge status={prospect.status} />
       </CardHeader>
+
+      <Tags>
+        <Tag>{TYPE_LABELS[prospect.type] || prospect.type}</Tag>
+        {prospect.country && <Tag>{prospect.country}</Tag>}
+      </Tags>
 
       <InfoRow>
         {prospect.email && (
@@ -118,6 +203,23 @@ export function ProspectCard({ prospect, onEdit, onDelete, onStatusChange }: Pro
         )}
       </InfoRow>
 
+      {(prospect.monthlyFee > 0 || prospect.integrationFee > 0) && (
+        <FeeRow>
+          {prospect.monthlyFee > 0 && (
+            <FeeItem>
+              <span>ყოველთვიური</span>
+              <FeeValue>${prospect.monthlyFee.toLocaleString()}</FeeValue>
+            </FeeItem>
+          )}
+          {prospect.integrationFee > 0 && (
+            <FeeItem>
+              <span>ინტეგრაცია</span>
+              <FeeValue>${prospect.integrationFee.toLocaleString()}</FeeValue>
+            </FeeItem>
+          )}
+        </FeeRow>
+      )}
+
       {prospect.notes && <Notes>{prospect.notes}</Notes>}
 
       <CardActions>
@@ -131,13 +233,13 @@ export function ProspectCard({ prospect, onEdit, onDelete, onStatusChange }: Pro
             </option>
           ))}
         </StatusSelect>
-        <SmallButton onClick={() => onEdit(prospect)}>Edit</SmallButton>
-        <SmallButton onClick={() => onDelete(prospect.id)}>Delete</SmallButton>
+        <SmallButton onClick={() => onEdit(prospect)}>რედაქტირება</SmallButton>
+        <SmallButton onClick={() => onDelete(prospect.id)}>წაშლა</SmallButton>
       </CardActions>
 
       <DateInfo>
-        Added {formatDate(prospect.createdAt)}
-        {prospect.updatedAt !== prospect.createdAt && ` | Updated ${formatDate(prospect.updatedAt)}`}
+        დამატებულია {formatDate(prospect.createdAt)}
+        {prospect.updatedAt !== prospect.createdAt && ` | განახლებულია ${formatDate(prospect.updatedAt)}`}
       </DateInfo>
     </Card>
   );

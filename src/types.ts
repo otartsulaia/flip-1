@@ -7,6 +7,8 @@ export type ProspectStatus =
   | 'won'
   | 'lost';
 
+export type ProspectType = 'business' | 'government';
+
 export interface Prospect {
   id: string;
   companyName: string;
@@ -14,19 +16,24 @@ export interface Prospect {
   email: string;
   phone: string;
   status: ProspectStatus;
+  type: ProspectType;
+  country: string;
+  monthlyFee: number;
+  integrationFee: number;
+  logoUrl: string;
   notes: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export const STATUS_LABELS: Record<ProspectStatus, string> = {
-  new: 'New',
-  contacted: 'Contacted',
-  meeting_scheduled: 'Meeting Scheduled',
-  proposal_sent: 'Proposal Sent',
-  negotiation: 'Negotiation',
-  won: 'Won',
-  lost: 'Lost',
+  new: 'ახალი',
+  contacted: 'დაკავშირებული',
+  meeting_scheduled: 'შეხვედრა დანიშნული',
+  proposal_sent: 'წინადადება გაგზავნილი',
+  negotiation: 'მოლაპარაკება',
+  won: 'მოგებული',
+  lost: 'წაგებული',
 };
 
 export const STATUS_COLORS: Record<ProspectStatus, string> = {
@@ -38,3 +45,25 @@ export const STATUS_COLORS: Record<ProspectStatus, string> = {
   won: '#10b981',
   lost: '#ef4444',
 };
+
+export const TYPE_LABELS: Record<ProspectType, string> = {
+  business: 'ბიზნესი',
+  government: 'სახელმწიფო',
+};
+
+export const COUNTRIES = [
+  'საქართველო',
+  'აშშ',
+  'გერმანია',
+  'თურქეთი',
+  'აზერბაიჯანი',
+  'სომხეთი',
+  'უკრაინა',
+  'ისრაელი',
+  'დიდი ბრიტანეთი',
+  'საფრანგეთი',
+  'იტალია',
+  'ესპანეთი',
+  'არაბეთი (UAE)',
+  'სხვა',
+];
