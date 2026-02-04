@@ -47,7 +47,7 @@ const Logo = styled.h1`
   color: #fafafa;
   margin: 0;
   span {
-    color: #10b981;
+    color: #007AFF;
   }
 `;
 
@@ -60,17 +60,56 @@ const Subtitle = styled.p`
 const LangButton = styled.button<{ $active?: boolean }>`
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1px solid ${({ $active }) => $active ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 255, 255, 0.08)'};
-  background: ${({ $active }) => $active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.04)'};
-  color: ${({ $active }) => $active ? '#10b981' : 'rgba(255, 255, 255, 0.5)'};
+  border: 1px solid ${({ $active }) => $active ? 'rgba(0, 122, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)'};
+  background: ${({ $active }) => $active ? 'rgba(0, 122, 255, 0.15)' : 'rgba(255, 255, 255, 0.04)'};
+  color: ${({ $active }) => $active ? '#007AFF' : 'rgba(255, 255, 255, 0.5)'};
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
   transition: all 0.2s ease;
   outline: none;
   &:hover {
-    background: ${({ $active }) => $active ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.08)'};
+    background: ${({ $active }) => $active ? 'rgba(0, 122, 255, 0.2)' : 'rgba(255, 255, 255, 0.08)'};
   }
+`;
+
+const QuickActionsBar = styled(GlassCard)`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+`;
+
+const QuickActionButton = styled.button`
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+  color: #e4e4e7;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  outline: none;
+  &:hover {
+    background: rgba(0, 122, 255, 0.15);
+    border-color: rgba(0, 122, 255, 0.3);
+    color: #007AFF;
+  }
+  &:active {
+    transform: scale(0.97);
+  }
+`;
+
+const QuickActionsLabel = styled.span`
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 6px;
 `;
 
 const Stats = styled.div`
@@ -125,7 +164,7 @@ const FilterSelect = styled.select`
   font-size: 13px;
   transition: all 0.2s ease;
   &:focus {
-    border-color: rgba(16, 185, 129, 0.4);
+    border-color: rgba(0, 122, 255, 0.4);
     background: rgba(255, 255, 255, 0.08);
   }
   option {
@@ -197,16 +236,16 @@ const Tab = styled.button<{ $active?: boolean }>`
   flex: 1;
   padding: 12px 20px;
   border: none;
-  background: ${({ $active }) => ($active ? 'rgba(16, 185, 129, 0.15)' : 'transparent')};
-  color: ${({ $active }) => ($active ? '#10b981' : 'rgba(255, 255, 255, 0.4)')};
+  background: ${({ $active }) => ($active ? 'rgba(0, 122, 255, 0.15)' : 'transparent')};
+  color: ${({ $active }) => ($active ? '#007AFF' : 'rgba(255, 255, 255, 0.4)')};
   font-weight: ${({ $active }) => ($active ? '600' : '400')};
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s ease;
   outline: none;
   &:hover {
-    background: ${({ $active }) => ($active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.04)')};
-    color: ${({ $active }) => ($active ? '#10b981' : 'rgba(255, 255, 255, 0.6)')};
+    background: ${({ $active }) => ($active ? 'rgba(0, 122, 255, 0.15)' : 'rgba(255, 255, 255, 0.04)')};
+    color: ${({ $active }) => ($active ? '#007AFF' : 'rgba(255, 255, 255, 0.6)')};
   }
 `;
 
@@ -244,6 +283,25 @@ export function CRM() {
     if (confirm(t('confirmDelete'))) {
       deleteProspect(id);
     }
+  };
+
+  const handleChangeCost = (id: string, newCost: number) => {
+    const prospect = prospects.find(p => p.id === id);
+    if (!prospect) return;
+    const now = new Date().toISOString();
+    const history = [...(prospect.costHistory || [])];
+    history.push({ date: now, amount: newCost });
+    updateProspect(id, { monthlyCost: newCost, costHistory: history });
+  };
+
+  const handleExport = () => {
+    const blob = new Blob([JSON.stringify(prospects, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `simpler-crm-export-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const filteredProspects = prospects.filter(p => {
@@ -285,6 +343,19 @@ export function CRM() {
           </Button>
         </HeaderRight>
       </Header>
+
+      <QuickActionsBar>
+        <QuickActionsLabel>{t('quickActions')}</QuickActionsLabel>
+        <QuickActionButton onClick={() => window.open('https://business.tbcbank.ge', '_blank')}>
+          {t('openTBC')}
+        </QuickActionButton>
+        <QuickActionButton onClick={() => window.open('https://dashboard.keepz.me', '_blank')}>
+          {t('openKeepz')}
+        </QuickActionButton>
+        <QuickActionButton onClick={handleExport}>
+          {t('exportData')}
+        </QuickActionButton>
+      </QuickActionsBar>
 
       <Stats>
         <StatCard>
@@ -378,6 +449,7 @@ export function CRM() {
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   onStatusChange={updateStatus}
+                  onChangeCost={handleChangeCost}
                 />
               ))}
             </ProspectList>

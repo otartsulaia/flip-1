@@ -70,7 +70,7 @@ const CheckboxRow = styled.label`
   input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #10b981;
+    accent-color: #007AFF;
     cursor: pointer;
   }
 `;
@@ -148,6 +148,7 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
       paymentDayOfMonth: parseInt(paymentDayOfMonth) || 1,
       paymentDelayed,
       paymentDelayNotes,
+      costHistory: initialData?.costHistory || [],
     });
   };
 
@@ -178,7 +179,7 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
                 }}
                 style={{
                   cursor: 'pointer',
-                  border: logoUrl === url ? '2px solid #10b981' : '2px solid transparent',
+                  border: logoUrl === url ? '2px solid #007AFF' : '2px solid transparent',
                 }}
               />
             ))}

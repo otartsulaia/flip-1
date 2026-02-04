@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Prospect, ProspectStatus } from '../types';
+import { Prospect, ProspectStatus, CostHistoryEntry } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const STORAGE_KEY = 'simpler_crm_prospects';
@@ -28,6 +28,7 @@ function toSnakeCase(prospect: Prospect): Record<string, unknown> {
     payment_day_of_month: prospect.paymentDayOfMonth,
     payment_delayed: prospect.paymentDelayed,
     payment_delay_notes: prospect.paymentDelayNotes,
+    cost_history: JSON.stringify(prospect.costHistory || []),
     created_at: prospect.createdAt,
     updated_at: prospect.updatedAt,
   };
@@ -35,6 +36,18 @@ function toSnakeCase(prospect: Prospect): Record<string, unknown> {
 
 // Convert snake_case DB row to camelCase JS object
 function toCamelCase(row: Record<string, unknown>): Prospect {
+  let costHistory: CostHistoryEntry[] = [];
+  try {
+    const raw = row.cost_history;
+    if (typeof raw === 'string') {
+      costHistory = JSON.parse(raw) as CostHistoryEntry[];
+    } else if (Array.isArray(raw)) {
+      costHistory = raw as CostHistoryEntry[];
+    }
+  } catch {
+    costHistory = [];
+  }
+
   return {
     id: row.id as string,
     companyName: (row.company_name as string) || '',
@@ -53,6 +66,7 @@ function toCamelCase(row: Record<string, unknown>): Prospect {
     paymentDayOfMonth: Number(row.payment_day_of_month) || 1,
     paymentDelayed: Boolean(row.payment_delayed),
     paymentDelayNotes: (row.payment_delay_notes as string) || '',
+    costHistory,
     createdAt: (row.created_at as string) || '',
     updatedAt: (row.updated_at as string) || '',
   };
@@ -123,6 +137,7 @@ export function useProspects() {
     const now = new Date().toISOString();
     const newProspect: Prospect = {
       ...data,
+      costHistory: data.costHistory || [],
       id: generateId(),
       createdAt: now,
       updatedAt: now,
@@ -176,12 +191,17 @@ export function useProspects() {
           paymentDayOfMonth: 'payment_day_of_month',
           paymentDelayed: 'payment_delayed',
           paymentDelayNotes: 'payment_delay_notes',
+          costHistory: 'cost_history',
         };
 
         for (const [key, value] of Object.entries(data)) {
           const snakeKey = keyMap[key];
           if (snakeKey) {
-            updateData[snakeKey] = value;
+            if (key === 'costHistory') {
+              updateData[snakeKey] = JSON.stringify(value);
+            } else {
+              updateData[snakeKey] = value;
+            }
           }
         }
 

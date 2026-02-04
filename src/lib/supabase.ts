@@ -30,6 +30,7 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
     payment_day_of_month INTEGER DEFAULT 1,
     payment_delayed BOOLEAN DEFAULT false,
     payment_delay_notes TEXT DEFAULT '',
+    cost_history JSONB DEFAULT '[]',
     created_at TEXT DEFAULT now(),
     updated_at TEXT DEFAULT now()
   );

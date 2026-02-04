@@ -10,6 +10,11 @@ export type ProspectStatus =
 export type ProspectType = 'business' | 'government';
 export type Language = 'ka' | 'en';
 
+export interface CostHistoryEntry {
+  date: string;
+  amount: number;
+}
+
 export interface Prospect {
   id: string;
   companyName: string;
@@ -28,6 +33,7 @@ export interface Prospect {
   paymentDayOfMonth: number;
   paymentDelayed: boolean;
   paymentDelayNotes: string;
+  costHistory: CostHistoryEntry[];
   createdAt: string;
   updatedAt: string;
 }
@@ -72,13 +78,13 @@ export const STATUS_LABELS: Record<ProspectStatus, { ka: string; en: string }> =
 };
 
 export const STATUS_COLORS: Record<ProspectStatus, string> = {
-  new: '#6b7280',
-  contacted: '#3b82f6',
-  meeting_scheduled: '#8b5cf6',
-  proposal_sent: '#f59e0b',
-  negotiation: '#ec4899',
-  won: '#10b981',
-  lost: '#ef4444',
+  new: '#8E8E93',
+  contacted: '#007AFF',
+  meeting_scheduled: '#AF52DE',
+  proposal_sent: '#FF9500',
+  negotiation: '#FF2D55',
+  won: '#34C759',
+  lost: '#FF3B30',
 };
 
 export const TYPE_LABELS: Record<ProspectType, { ka: string; en: string }> = {
@@ -148,4 +154,11 @@ export const T: Record<TranslationKey, { ka: string; en: string }> = {
   yes: { ka: '\u10D3\u10D8\u10D0\u10EE', en: 'Yes' },
   no: { ka: '\u10D0\u10E0\u10D0', en: 'No' },
   supabaseNotice: { ka: 'Supabase \u10D0\u10E0 \u10D0\u10E0\u10D8\u10E1 \u10D3\u10D0\u10D9\u10DD\u10DC\u10E4\u10D8\u10D2\u10E3\u10E0\u10D8\u10E0\u10D4\u10D1\u10E3\u10DA\u10D8 - \u10DB\u10DD\u10DC\u10D0\u10EA\u10D4\u10DB\u10D4\u10D1\u10D8 localStorage-\u10E8\u10D8 \u10D8\u10DC\u10D0\u10EE\u10D4\u10D1\u10D0', en: 'Supabase not configured - data saved in localStorage' },
+  openTBC: { ka: 'TBC \u10D1\u10D0\u10DC\u10D9\u10D8', en: 'TBC Bank' },
+  openKeepz: { ka: 'Keepz', en: 'Keepz' },
+  exportData: { ka: '\u10D4\u10E5\u10E1\u10DE\u10DD\u10E0\u10E2\u10D8', en: 'Export' },
+  costHistory: { ka: '\u10EE\u10D0\u10E0\u10EF\u10D4\u10D1\u10D8\u10E1 \u10D8\u10E1\u10E2\u10DD\u10E0\u10D8\u10D0', en: 'Cost History' },
+  changeCost: { ka: '\u10EE\u10D0\u10E0\u10EF\u10D8\u10E1 \u10EA\u10D5\u10DA\u10D8\u10DA\u10D4\u10D1\u10D0', en: 'Change Cost' },
+  currentCost: { ka: '\u10DB\u10D8\u10DB\u10D3\u10D8\u10DC\u10D0\u10E0\u10D4 \u10EE\u10D0\u10E0\u10EF\u10D8', en: 'Current Cost' },
+  quickActions: { ka: '\u10E1\u10EC\u10E0\u10D0\u10E4\u10D8 \u10DB\u10DD\u10E5\u10DB\u10D4\u10D3\u10D4\u10D1\u10D4\u10D1\u10D8', en: 'Quick Actions' },
 };

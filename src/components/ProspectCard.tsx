@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Prospect, ProspectStatus, STATUS_LABELS, getCountryByCode } from '../types';
 import { StatusBadge } from './StatusBadge';
@@ -101,6 +101,7 @@ const FeeRow = styled.div`
   gap: 20px;
   margin: 12px 0;
   flex-wrap: wrap;
+  align-items: flex-end;
 `;
 
 const FeeItem = styled.div`
@@ -112,15 +113,83 @@ const FeeItem = styled.div`
 `;
 
 const FeeValue = styled.div`
-  color: #10b981;
+  color: #34C759;
   font-weight: 600;
   font-size: 15px;
 `;
 
 const CostValue = styled.div`
-  color: #ef4444;
+  color: #FF3B30;
   font-weight: 600;
   font-size: 15px;
+`;
+
+const CostRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const ChangeCostButton = styled.button`
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 122, 255, 0.3);
+  background: rgba(0, 122, 255, 0.1);
+  color: #007AFF;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  outline: none;
+  &:hover {
+    background: rgba(0, 122, 255, 0.2);
+    border-color: rgba(0, 122, 255, 0.5);
+  }
+`;
+
+const InlineCostInput = styled.input`
+  width: 80px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 122, 255, 0.4);
+  background: rgba(0, 0, 0, 0.3);
+  color: #e4e4e7;
+  font-size: 12px;
+  outline: none;
+  &:focus {
+    border-color: rgba(0, 122, 255, 0.6);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15);
+  }
+`;
+
+const InlineCostConfirm = styled.button`
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(52, 199, 89, 0.4);
+  background: rgba(52, 199, 89, 0.15);
+  color: #34C759;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  outline: none;
+  &:hover {
+    background: rgba(52, 199, 89, 0.25);
+  }
+`;
+
+const InlineCostCancel = styled.button`
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  background: rgba(255, 59, 48, 0.1);
+  color: #FF3B30;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  outline: none;
+  &:hover {
+    background: rgba(255, 59, 48, 0.2);
+  }
 `;
 
 const IntegrationInfo = styled.div`
@@ -150,9 +219,9 @@ const DelayedBadge = styled.span`
   border-radius: 8px;
   font-size: 11px;
   font-weight: 600;
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(255, 59, 48, 0.15);
+  color: #FF3B30;
+  border: 1px solid rgba(255, 59, 48, 0.3);
 `;
 
 const Notes = styled.p`
@@ -185,7 +254,7 @@ const StatusSelect = styled.select`
   outline: none;
   transition: all 0.2s ease;
   &:focus {
-    border-color: rgba(16, 185, 129, 0.4);
+    border-color: rgba(0, 122, 255, 0.4);
   }
   option {
     background: #1a1d25;
@@ -206,10 +275,13 @@ interface ProspectCardProps {
   onEdit: (prospect: Prospect) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: ProspectStatus) => void;
+  onChangeCost: (id: string, newCost: number) => void;
 }
 
-export function ProspectCard({ prospect, onEdit, onDelete, onStatusChange }: ProspectCardProps) {
+export function ProspectCard({ prospect, onEdit, onDelete, onStatusChange, onChangeCost }: ProspectCardProps) {
   const { lang, t, statusLabel, typeLabel, countryName } = useLanguage();
+  const [showCostInput, setShowCostInput] = useState(false);
+  const [newCostValue, setNewCostValue] = useState('');
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-US', {
@@ -233,6 +305,21 @@ export function ProspectCard({ prospect, onEdit, onDelete, onStatusChange }: Pro
   };
 
   const integrationMonths = getIntegrationMonths();
+
+  // Calculate total paid using cost history if available
+  const calculateTotalFromHistory = (): number => {
+    const history = prospect.costHistory || [];
+    if (history.length === 0) return integrationMonths * (prospect.monthlyFee || 0) + (prospect.integrationFee || 0);
+    let total = prospect.integrationFee || 0;
+    for (let i = 0; i < history.length; i++) {
+      const startDate = new Date(history[i].date);
+      const endDate = i < history.length - 1 ? new Date(history[i + 1].date) : new Date();
+      const months = Math.max(0, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)));
+      total += months * history[i].amount;
+    }
+    return total;
+  };
+
   const totalPaid = (integrationMonths * (prospect.monthlyFee || 0)) + (prospect.integrationFee || 0);
 
   // Calculate next payment date from paymentDayOfMonth
@@ -245,6 +332,15 @@ export function ProspectCard({ prospect, onEdit, onDelete, onStatusChange }: Pro
       nextDate = new Date(now.getFullYear(), now.getMonth() + 1, day);
     }
     return formatDate(nextDate.toISOString());
+  };
+
+  const handleCostSubmit = () => {
+    const val = parseFloat(newCostValue);
+    if (!isNaN(val) && val >= 0) {
+      onChangeCost(prospect.id, val);
+      setShowCostInput(false);
+      setNewCostValue('');
+    }
   };
 
   return (
@@ -312,7 +408,59 @@ export function ProspectCard({ prospect, onEdit, onDelete, onStatusChange }: Pro
           {prospect.monthlyCost > 0 && (
             <FeeItem>
               <span>{t('cost')}</span>
-              <CostValue>-${prospect.monthlyCost.toLocaleString()}</CostValue>
+              <CostRow>
+                <CostValue>-${prospect.monthlyCost.toLocaleString()}</CostValue>
+                {!showCostInput && (
+                  <ChangeCostButton onClick={() => { setShowCostInput(true); setNewCostValue(prospect.monthlyCost.toString()); }}>
+                    {t('changeCost')}
+                  </ChangeCostButton>
+                )}
+              </CostRow>
+              {showCostInput && (
+                <CostRow style={{ marginTop: 4 }}>
+                  <InlineCostInput
+                    type="number"
+                    value={newCostValue}
+                    onChange={e => setNewCostValue(e.target.value)}
+                    min="0"
+                    step="0.01"
+                    placeholder="0"
+                    autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter') handleCostSubmit(); if (e.key === 'Escape') setShowCostInput(false); }}
+                  />
+                  <InlineCostConfirm onClick={handleCostSubmit}>OK</InlineCostConfirm>
+                  <InlineCostCancel onClick={() => setShowCostInput(false)}>X</InlineCostCancel>
+                </CostRow>
+              )}
+            </FeeItem>
+          )}
+          {prospect.monthlyCost === 0 && (
+            <FeeItem>
+              <span>{t('cost')}</span>
+              <CostRow>
+                <CostValue>$0</CostValue>
+                {!showCostInput && (
+                  <ChangeCostButton onClick={() => { setShowCostInput(true); setNewCostValue('0'); }}>
+                    {t('changeCost')}
+                  </ChangeCostButton>
+                )}
+              </CostRow>
+              {showCostInput && (
+                <CostRow style={{ marginTop: 4 }}>
+                  <InlineCostInput
+                    type="number"
+                    value={newCostValue}
+                    onChange={e => setNewCostValue(e.target.value)}
+                    min="0"
+                    step="0.01"
+                    placeholder="0"
+                    autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter') handleCostSubmit(); if (e.key === 'Escape') setShowCostInput(false); }}
+                  />
+                  <InlineCostConfirm onClick={handleCostSubmit}>OK</InlineCostConfirm>
+                  <InlineCostCancel onClick={() => setShowCostInput(false)}>X</InlineCostCancel>
+                </CostRow>
+              )}
             </FeeItem>
           )}
         </FeeRow>
@@ -338,7 +486,7 @@ export function ProspectCard({ prospect, onEdit, onDelete, onStatusChange }: Pro
       )}
 
       {prospect.paymentDelayed && prospect.paymentDelayNotes && (
-        <Notes style={{ borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+        <Notes style={{ borderColor: 'rgba(255, 59, 48, 0.2)' }}>
           {prospect.paymentDelayNotes}
         </Notes>
       )}

@@ -21,7 +21,7 @@ export const GlobalStyle = createGlobalStyle`
     color: #fafafa;
   }
   body, input, button, textarea, pre, select {
-    font-family: 'Inter', 'Roboto Mono', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Helvetica Neue', sans-serif;
     font-size: 14px;
   }
   #root {
@@ -38,15 +38,15 @@ export const GlobalStyle = createGlobalStyle`
     border-radius: 3px;
   }
   ::selection {
-    background: rgba(16, 185, 129, 0.3);
+    background: rgba(0, 122, 255, 0.3);
     color: white;
   }
 `;
 
 const InputCSS = css`
-  padding: 14px 16px;
+  padding: 12px 14px;
   width: 100%;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
@@ -55,8 +55,8 @@ const InputCSS = css`
   transition: all 0.2s ease;
   &:focus {
     background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(16, 185, 129, 0.4);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    border-color: rgba(0, 122, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
   }
   &::placeholder {
     color: rgba(255, 255, 255, 0.25);
@@ -64,7 +64,7 @@ const InputCSS = css`
 `;
 
 export const Input = styled.input`
-  height: 48px;
+  height: 44px;
   ${InputCSS}
 `;
 
@@ -75,9 +75,9 @@ export const Textarea = styled.textarea`
 `;
 
 export const Select = styled.select`
-  padding: 14px 16px;
+  padding: 12px 14px;
   width: 100%;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.05);
   color: #e4e4e7;
@@ -87,8 +87,8 @@ export const Select = styled.select`
   transition: all 0.2s ease;
   &:focus {
     background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(16, 185, 129, 0.4);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    border-color: rgba(0, 122, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
   }
   option {
     background: #1a1d25;
@@ -97,11 +97,11 @@ export const Select = styled.select`
 `;
 
 export const ButtonCSS = css<{ $gradient?: boolean }>`
-  padding: 12px 22px;
+  padding: 10px 20px;
   color: white;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
   outline: none;
@@ -121,13 +121,13 @@ export const ButtonCSS = css<{ $gradient?: boolean }>`
   ${({ $gradient }) =>
     $gradient &&
     `
-    background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+    background: #007AFF;
+    border: 1px solid rgba(0, 122, 255, 0.4);
+    box-shadow: 0 2px 12px rgba(0, 122, 255, 0.25);
     &:hover, &:focus {
-      background: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
-      border-color: rgba(16, 185, 129, 0.5);
-      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+      background: #0066DD;
+      border-color: rgba(0, 122, 255, 0.6);
+      box-shadow: 0 4px 16px rgba(0, 122, 255, 0.35);
     }
   `}
 `;
@@ -145,9 +145,9 @@ export const SmallButton = styled.button`
 
 export const GlassCard = styled.div`
   backdrop-filter: blur(20px);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
   padding: 20px;
   transition: all 0.2s ease;
 `;

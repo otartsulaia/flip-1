@@ -85,9 +85,20 @@ export function Financials({ prospects }: FinancialsProps) {
   // Total monthly costs from won prospects
   const totalMonthlyCosts = won.reduce((sum, p) => sum + (p.monthlyCost || 0), 0);
 
-  // Total costs = sum of (months * monthlyCost) for each won prospect
+  // Total costs using costHistory for accuracy
   const totalCosts = won.reduce((sum, p) => {
     if (!p.integrationStartDate) return sum;
+    const history = p.costHistory || [];
+    if (history.length > 0) {
+      let costTotal = 0;
+      for (let i = 0; i < history.length; i++) {
+        const startDate = new Date(history[i].date);
+        const endDate = i < history.length - 1 ? new Date(history[i + 1].date) : new Date();
+        const months = Math.max(0, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)));
+        costTotal += months * history[i].amount;
+      }
+      return sum + costTotal;
+    }
     const start = new Date(p.integrationStartDate);
     const now = new Date();
     const diffMs = now.getTime() - start.getTime();
@@ -110,31 +121,31 @@ export function Financials({ prospects }: FinancialsProps) {
       <Grid>
         <Metric>
           <MetricLabel>{t('mrr')}</MetricLabel>
-          <MetricValue $color="#10b981">${wonMRR.toLocaleString()}</MetricValue>
+          <MetricValue $color="#34C759">${wonMRR.toLocaleString()}</MetricValue>
           <MetricSub>{t('fromWon')}</MetricSub>
         </Metric>
 
         <Metric>
           <MetricLabel>{t('arr')}</MetricLabel>
-          <MetricValue $color="#10b981">${wonARR.toLocaleString()}</MetricValue>
+          <MetricValue $color="#34C759">${wonARR.toLocaleString()}</MetricValue>
           <MetricSub>MRR x 12 + ${wonIntegration.toLocaleString()} {t('integration')}</MetricSub>
         </Metric>
 
         <Metric>
           <MetricLabel>{t('totalCollected')}</MetricLabel>
-          <MetricValue $color="#f59e0b">${totalCollected.toLocaleString()}</MetricValue>
+          <MetricValue $color="#FF9500">${totalCollected.toLocaleString()}</MetricValue>
           <MetricSub>{t('fromWon')}</MetricSub>
         </Metric>
 
         <Metric>
           <MetricLabel>{t('totalCosts')}</MetricLabel>
-          <MetricValue $color="#ef4444">${totalCosts.toLocaleString()}</MetricValue>
+          <MetricValue $color="#FF3B30">${totalCosts.toLocaleString()}</MetricValue>
           <MetricSub>${totalMonthlyCosts.toLocaleString()}/{t('monthly')}</MetricSub>
         </Metric>
 
         <Metric>
           <MetricLabel>{t('netProfit')}</MetricLabel>
-          <MetricValue $color={netProfit >= 0 ? '#10b981' : '#ef4444'}>
+          <MetricValue $color={netProfit >= 0 ? '#34C759' : '#FF3B30'}>
             ${netProfit.toLocaleString()}
           </MetricValue>
           <MetricSub>{t('totalCollected')} - {t('totalCosts')}</MetricSub>
@@ -142,14 +153,14 @@ export function Financials({ prospects }: FinancialsProps) {
 
         <Metric>
           <MetricLabel>{t('pipelineMRR')}</MetricLabel>
-          <MetricValue $color="#3b82f6">${pipelineMRR.toLocaleString()}</MetricValue>
+          <MetricValue $color="#007AFF">${pipelineMRR.toLocaleString()}</MetricValue>
           <MetricSub>{active.length} {t('prospects')}</MetricSub>
         </Metric>
 
         {delayedCount > 0 && (
           <Metric>
             <MetricLabel>{t('paymentDelayed')}</MetricLabel>
-            <MetricValue $color="#ef4444">{delayedCount}</MetricValue>
+            <MetricValue $color="#FF3B30">{delayedCount}</MetricValue>
             <MetricSub>{t('delayed')}</MetricSub>
           </Metric>
         )}
