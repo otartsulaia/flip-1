@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useProspects } from './hooks/useProspects';
-import { Prospect, ProspectStatus, STATUS_LABELS } from './types';
+import { Prospect, ProspectStatus, ProspectType, STATUS_LABELS, TYPE_LABELS, COUNTRIES } from './types';
 import { ProspectForm } from './components/ProspectForm';
 import { ProspectCard } from './components/ProspectCard';
+import { Financials } from './components/Financials';
 import { Button, Input } from './styles';
 
 const PageWrapper = styled.div`
   min-height: 100vh;
   padding: 20px;
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
 `;
 
@@ -40,50 +41,52 @@ const Subtitle = styled.p`
 
 const Stats = styled.div`
   display: flex;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 24px;
 `;
 
 const StatCard = styled.div`
   background: rgb(47 51 60);
-  padding: 16px 20px;
+  padding: 14px 18px;
   border-radius: 10px;
-  min-width: 100px;
+  min-width: 90px;
+  flex: 1;
 `;
 
 const StatNumber = styled.div`
-  font-size: 28px;
+  font-size: 26px;
   font-weight: bold;
   color: white;
 `;
 
 const StatLabel = styled.div`
-  font-size: 12px;
+  font-size: 11px;
   color: #9ca3af;
 `;
 
 const Controls = styled.div`
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 20px;
   flex-wrap: wrap;
 `;
 
 const SearchInput = styled(Input)`
   flex: 1;
-  min-width: 200px;
+  min-width: 180px;
   height: 44px;
 `;
 
 const FilterSelect = styled.select`
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-radius: 10px;
   border: none;
   background: rgb(47 51 60);
   color: white;
   outline: none;
   cursor: pointer;
+  font-size: 13px;
   &:focus {
     background: rgb(58 63 75);
   }
@@ -109,7 +112,7 @@ const ModalContent = styled.div`
   background: #191c23;
   border-radius: 16px;
   padding: 24px;
-  max-width: 500px;
+  max-width: 520px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
@@ -133,12 +136,41 @@ const EmptyTitle = styled.h3`
   margin: 0 0 8px 0;
 `;
 
+const TabBar = styled.div`
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  background: rgb(47 51 60);
+  border-radius: 10px;
+  overflow: hidden;
+`;
+
+const Tab = styled.button<{ $active?: boolean }>`
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  background: ${({ $active }) => $active ? 'rgba(16, 185, 129, 0.2)' : 'transparent'};
+  color: ${({ $active }) => $active ? '#10b981' : '#9ca3af'};
+  font-weight: ${({ $active }) => $active ? '600' : '400'};
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s;
+  &:hover {
+    background: ${({ $active }) => $active ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.05)'};
+  }
+`;
+
+type ViewTab = 'prospects' | 'financials';
+
 export function CRM() {
   const { prospects, addProspect, updateProspect, updateStatus, deleteProspect } = useProspects();
   const [showForm, setShowForm] = useState(false);
   const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProspectStatus | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<ProspectType | 'all'>('all');
+  const [countryFilter, setCountryFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<ViewTab>('prospects');
 
   const handleAddProspect = (data: Omit<Prospect, 'id' | 'createdAt' | 'updatedAt'>) => {
     addProspect(data);
@@ -157,7 +189,7 @@ export function CRM() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this prospect?')) {
+    if (confirm('ნამდვილად გსურთ წაშლა?')) {
       deleteProspect(id);
     }
   };
@@ -168,11 +200,15 @@ export function CRM() {
       p.contactName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesType = typeFilter === 'all' || p.type === typeFilter;
+    const matchesCountry = countryFilter === 'all' || p.country === countryFilter;
+    return matchesSearch && matchesStatus && matchesType && matchesCountry;
   });
 
   const wonCount = prospects.filter(p => p.status === 'won').length;
   const activeCount = prospects.filter(p => !['won', 'lost'].includes(p.status)).length;
+
+  const usedCountries = [...new Set(prospects.map(p => p.country).filter(Boolean))];
 
   return (
     <PageWrapper>
@@ -181,77 +217,116 @@ export function CRM() {
           <Logo>
             simpler<span>.ge</span> CRM
           </Logo>
-          <Subtitle>Track your prospects and close more deals</Subtitle>
+          <Subtitle>პროსპექტების მართვა</Subtitle>
         </div>
         <Button $gradient onClick={() => setShowForm(true)}>
-          + Add Prospect
+          + დამატება
         </Button>
       </Header>
 
       <Stats>
         <StatCard>
           <StatNumber>{prospects.length}</StatNumber>
-          <StatLabel>Total Prospects</StatLabel>
+          <StatLabel>სულ</StatLabel>
         </StatCard>
         <StatCard>
           <StatNumber>{activeCount}</StatNumber>
-          <StatLabel>Active</StatLabel>
+          <StatLabel>აქტიური</StatLabel>
         </StatCard>
         <StatCard>
           <StatNumber>{wonCount}</StatNumber>
-          <StatLabel>Won</StatLabel>
+          <StatLabel>მოგებული</StatLabel>
+        </StatCard>
+        <StatCard>
+          <StatNumber>
+            ${prospects.filter(p => p.status === 'won').reduce((s, p) => s + (p.monthlyFee || 0), 0).toLocaleString()}
+          </StatNumber>
+          <StatLabel>MRR</StatLabel>
         </StatCard>
       </Stats>
 
-      <Controls>
-        <SearchInput
-          type="text"
-          placeholder="Search prospects..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-        />
-        <FilterSelect
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value as ProspectStatus | 'all')}
-        >
-          <option value="all">All Status</option>
-          {Object.entries(STATUS_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </FilterSelect>
-      </Controls>
+      <TabBar>
+        <Tab $active={activeTab === 'prospects'} onClick={() => setActiveTab('prospects')}>
+          პროსპექტები
+        </Tab>
+        <Tab $active={activeTab === 'financials'} onClick={() => setActiveTab('financials')}>
+          ფინანსები
+        </Tab>
+      </TabBar>
 
-      {filteredProspects.length === 0 ? (
-        <EmptyState>
-          <EmptyTitle>
-            {prospects.length === 0 ? 'No prospects yet' : 'No matching prospects'}
-          </EmptyTitle>
-          <p>
-            {prospects.length === 0
-              ? 'Add your first prospect to get started.'
-              : 'Try adjusting your search or filter.'}
-          </p>
-        </EmptyState>
+      {activeTab === 'financials' ? (
+        <Financials prospects={prospects} />
       ) : (
-        <ProspectList>
-          {filteredProspects.map(prospect => (
-            <ProspectCard
-              key={prospect.id}
-              prospect={prospect}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onStatusChange={updateStatus}
+        <>
+          <Controls>
+            <SearchInput
+              type="text"
+              placeholder="ძიება..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
             />
-          ))}
-        </ProspectList>
+            <FilterSelect
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value as ProspectStatus | 'all')}
+            >
+              <option value="all">ყველა სტატუსი</option>
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </FilterSelect>
+            <FilterSelect
+              value={typeFilter}
+              onChange={e => setTypeFilter(e.target.value as ProspectType | 'all')}
+            >
+              <option value="all">ყველა ტიპი</option>
+              {Object.entries(TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </FilterSelect>
+            {usedCountries.length > 0 && (
+              <FilterSelect
+                value={countryFilter}
+                onChange={e => setCountryFilter(e.target.value)}
+              >
+                <option value="all">ყველა ქვეყანა</option>
+                {usedCountries.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </FilterSelect>
+            )}
+          </Controls>
+
+          {filteredProspects.length === 0 ? (
+            <EmptyState>
+              <EmptyTitle>
+                {prospects.length === 0 ? 'პროსპექტები ჯერ არ არის' : 'შედეგი ვერ მოიძებნა'}
+              </EmptyTitle>
+              <p>
+                {prospects.length === 0
+                  ? 'დაამატეთ პირველი პროსპექტი დასაწყებად.'
+                  : 'სცადეთ ძიების ან ფილტრის შეცვლა.'}
+              </p>
+            </EmptyState>
+          ) : (
+            <ProspectList>
+              {filteredProspects.map(prospect => (
+                <ProspectCard
+                  key={prospect.id}
+                  prospect={prospect}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onStatusChange={updateStatus}
+                />
+              ))}
+            </ProspectList>
+          )}
+        </>
       )}
 
       {(showForm || editingProspect) && (
         <Modal onClick={() => { setShowForm(false); setEditingProspect(null); }}>
           <ModalContent onClick={e => e.stopPropagation()}>
-            <ModalTitle>{editingProspect ? 'Edit Prospect' : 'Add New Prospect'}</ModalTitle>
+            <ModalTitle>{editingProspect ? 'პროსპექტის რედაქტირება' : 'ახალი პროსპექტი'}</ModalTitle>
             <ProspectForm
               onSubmit={editingProspect ? handleUpdateProspect : handleAddProspect}
               onCancel={() => { setShowForm(false); setEditingProspect(null); }}

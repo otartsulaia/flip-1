@@ -57,6 +57,21 @@ export const Textarea = styled.textarea`
   resize: vertical;
 `;
 
+export const Select = styled.select`
+  padding: 15px;
+  width: 100%;
+  border-radius: 10px;
+  border: none;
+  background: rgb(47 51 60);
+  color: white;
+  outline: none;
+  font-size: 14px;
+  cursor: pointer;
+  &:focus {
+    background: rgb(58 63 75);
+  }
+`;
+
 export const ButtonCSS = css<{$gradient?: boolean}>`
   padding: 12px 20px;
   color: white;
