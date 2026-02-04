@@ -104,12 +104,12 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
   const [paymentDayOfMonth, setPaymentDayOfMonth] = useState(initialData?.paymentDayOfMonth?.toString() || '1');
   const [paymentDelayed, setPaymentDelayed] = useState(initialData?.paymentDelayed || false);
   const [paymentDelayNotes, setPaymentDelayNotes] = useState(initialData?.paymentDelayNotes || '');
-  const [logoSuggestions, setLogoSuggestions] = useState<string[]>([]);
+  const [loadedLogos, setLoadedLogos] = useState<string[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (!companyName.trim()) {
-      setLogoSuggestions([]);
+      setLoadedLogos([]);
       return;
     }
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -122,7 +122,20 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
         `${base}.org`,
         `${base}.net`,
       ];
-      setLogoSuggestions(domains.map(d => `https://logo.clearbit.com/${d}`));
+      // Generate URLs from multiple sources for better reliability
+      const urls = [
+        ...domains.map(d => `https://logo.clearbit.com/${d}`),
+        ...domains.map(d => `https://www.google.com/s2/favicons?domain=${d}&sz=128`),
+      ];
+      // Preload each image and only keep ones that successfully load
+      setLoadedLogos([]);
+      urls.forEach(url => {
+        const img = new Image();
+        img.onload = () => {
+          setLoadedLogos(prev => prev.includes(url) ? prev : [...prev, url]);
+        };
+        img.src = url;
+      });
     }, 400);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -165,35 +178,39 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
         />
       </FormGroup>
 
-      {logoSuggestions.length > 0 && (
-        <FormGroup>
-          <Label>{t('logo')}</Label>
+      <FormGroup>
+        <Label>{t('logo')}</Label>
+        {loadedLogos.length > 0 && (
+          <>
+            <LogoPreview>
+              {loadedLogos.map(url => (
+                <LogoImg
+                  key={url}
+                  src={url}
+                  onClick={() => setLogoUrl(url)}
+                  style={{
+                    cursor: 'pointer',
+                    border: logoUrl === url ? '2px solid #007AFF' : '2px solid transparent',
+                  }}
+                />
+              ))}
+            </LogoPreview>
+            <LogoHint>{t('logoHint')}</LogoHint>
+          </>
+        )}
+        {logoUrl && (
           <LogoPreview>
-            {logoSuggestions.map(url => (
-              <LogoImg
-                key={url}
-                src={url}
-                onClick={() => setLogoUrl(url)}
-                onError={e => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-                style={{
-                  cursor: 'pointer',
-                  border: logoUrl === url ? '2px solid #007AFF' : '2px solid transparent',
-                }}
-              />
-            ))}
+            <LogoImg src={logoUrl} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           </LogoPreview>
-          <LogoHint>{t('logoHint')}</LogoHint>
-          <Input
-            type="url"
-            value={logoUrl}
-            onChange={e => setLogoUrl(e.target.value)}
-            placeholder="https://logo.clearbit.com/example.com"
-            style={{ height: 40, fontSize: 12 }}
-          />
-        </FormGroup>
-      )}
+        )}
+        <Input
+          type="url"
+          value={logoUrl}
+          onChange={e => setLogoUrl(e.target.value)}
+          placeholder="https://logo.clearbit.com/example.com"
+          style={{ height: 40, fontSize: 12 }}
+        />
+      </FormGroup>
 
       <FormGroup>
         <Label>{t('contactPerson')}</Label>
