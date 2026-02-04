@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { Prospect, ProspectStatus, ProspectType, STATUS_LABELS, TYPE_LABELS, COUNTRIES } from '../types';
 import { Input, Textarea, Button, Select } from '../styles';
+import { useLanguage } from '../hooks/useLanguage';
 
 const Form = styled.form`
   display: grid;
@@ -25,7 +26,8 @@ const FormRow = styled.div`
 
 const Label = styled.label`
   font-size: 13px;
-  color: #9ca3af;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
 `;
 
 const ButtonRow = styled.div`
@@ -51,11 +53,26 @@ const LogoImg = styled.img`
 
 const LogoHint = styled.span`
   font-size: 11px;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.3);
 `;
 
 const FeeInput = styled(Input)`
   height: 44px;
+`;
+
+const CheckboxRow = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #e4e4e7;
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #10b981;
+    cursor: pointer;
+  }
 `;
 
 interface ProspectFormProps {
@@ -65,22 +82,28 @@ interface ProspectFormProps {
 }
 
 function guessLogoDomain(name: string): string {
-  const cleaned = name.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return cleaned;
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormProps) {
+  const { lang, t, statusLabel, typeLabel, countryName } = useLanguage();
+
   const [companyName, setCompanyName] = useState(initialData?.companyName || '');
   const [contactName, setContactName] = useState(initialData?.contactName || '');
   const [email, setEmail] = useState(initialData?.email || '');
   const [phone, setPhone] = useState(initialData?.phone || '');
   const [status, setStatus] = useState<ProspectStatus>(initialData?.status || 'new');
   const [type, setType] = useState<ProspectType>(initialData?.type || 'business');
-  const [country, setCountry] = useState(initialData?.country || 'საქართველო');
+  const [country, setCountry] = useState(initialData?.country || 'GE');
   const [monthlyFee, setMonthlyFee] = useState(initialData?.monthlyFee?.toString() || '');
   const [integrationFee, setIntegrationFee] = useState(initialData?.integrationFee?.toString() || '');
+  const [monthlyCost, setMonthlyCost] = useState(initialData?.monthlyCost?.toString() || '');
   const [logoUrl, setLogoUrl] = useState(initialData?.logoUrl || '');
   const [notes, setNotes] = useState(initialData?.notes || '');
+  const [integrationStartDate, setIntegrationStartDate] = useState(initialData?.integrationStartDate || '');
+  const [paymentDayOfMonth, setPaymentDayOfMonth] = useState(initialData?.paymentDayOfMonth?.toString() || '1');
+  const [paymentDelayed, setPaymentDelayed] = useState(initialData?.paymentDelayed || false);
+  const [paymentDelayNotes, setPaymentDelayNotes] = useState(initialData?.paymentDelayNotes || '');
   const [logoSuggestions, setLogoSuggestions] = useState<string[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -101,7 +124,9 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
       ];
       setLogoSuggestions(domains.map(d => `https://logo.clearbit.com/${d}`));
     }, 400);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [companyName]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -116,34 +141,41 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
       country,
       monthlyFee: parseFloat(monthlyFee) || 0,
       integrationFee: parseFloat(integrationFee) || 0,
+      monthlyCost: parseFloat(monthlyCost) || 0,
       logoUrl,
       notes,
+      integrationStartDate,
+      paymentDayOfMonth: parseInt(paymentDayOfMonth) || 1,
+      paymentDelayed,
+      paymentDelayNotes,
     });
   };
 
   return (
     <Form onSubmit={handleSubmit}>
       <FormGroup>
-        <Label>კომპანიის სახელი *</Label>
+        <Label>{t('companyName')} *</Label>
         <Input
           type="text"
           value={companyName}
           onChange={e => setCompanyName(e.target.value)}
-          placeholder="შეიყვანეთ კომპანიის სახელი"
+          placeholder={t('companyName')}
           required
         />
       </FormGroup>
 
       {logoSuggestions.length > 0 && (
         <FormGroup>
-          <Label>ლოგო (აირჩიეთ)</Label>
+          <Label>{t('logo')}</Label>
           <LogoPreview>
             {logoSuggestions.map(url => (
               <LogoImg
                 key={url}
                 src={url}
                 onClick={() => setLogoUrl(url)}
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                onError={e => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
                 style={{
                   cursor: 'pointer',
                   border: logoUrl === url ? '2px solid #10b981' : '2px solid transparent',
@@ -151,7 +183,7 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
               />
             ))}
           </LogoPreview>
-          <LogoHint>ან ჩასვით ლოგოს ბმული:</LogoHint>
+          <LogoHint>{t('logoHint')}</LogoHint>
           <Input
             type="url"
             value={logoUrl}
@@ -163,18 +195,18 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
       )}
 
       <FormGroup>
-        <Label>საკონტაქტო პირი</Label>
+        <Label>{t('contactPerson')}</Label>
         <Input
           type="text"
           value={contactName}
           onChange={e => setContactName(e.target.value)}
-          placeholder="სახელი და გვარი"
+          placeholder={t('contactPerson')}
         />
       </FormGroup>
 
       <FormRow>
         <FormGroup>
-          <Label>ელ-ფოსტა</Label>
+          <Label>{t('email')}</Label>
           <Input
             type="email"
             value={email}
@@ -183,7 +215,7 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
           />
         </FormGroup>
         <FormGroup>
-          <Label>ტელეფონი</Label>
+          <Label>{t('phone')}</Label>
           <Input
             type="tel"
             value={phone}
@@ -195,35 +227,41 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
 
       <FormRow>
         <FormGroup>
-          <Label>ტიპი</Label>
+          <Label>{t('type')}</Label>
           <Select value={type} onChange={e => setType(e.target.value as ProspectType)}>
-            {Object.entries(TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+            {Object.keys(TYPE_LABELS).map(value => (
+              <option key={value} value={value}>
+                {typeLabel(value)}
+              </option>
             ))}
           </Select>
         </FormGroup>
         <FormGroup>
-          <Label>ქვეყანა</Label>
+          <Label>{t('country')}</Label>
           <Select value={country} onChange={e => setCountry(e.target.value)}>
             {COUNTRIES.map(c => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c.code} value={c.code}>
+                {c.flag} {countryName(c)}
+              </option>
             ))}
           </Select>
         </FormGroup>
       </FormRow>
 
       <FormGroup>
-        <Label>სტატუსი</Label>
+        <Label>{t('status')}</Label>
         <Select value={status} onChange={e => setStatus(e.target.value as ProspectStatus)}>
-          {Object.entries(STATUS_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>{label}</option>
+          {Object.keys(STATUS_LABELS).map(value => (
+            <option key={value} value={value}>
+              {statusLabel(value)}
+            </option>
           ))}
         </Select>
       </FormGroup>
 
       <FormRow>
         <FormGroup>
-          <Label>ყოველთვიური გადასახადი ($)</Label>
+          <Label>{t('monthlyFee')}</Label>
           <FeeInput
             type="number"
             value={monthlyFee}
@@ -234,7 +272,7 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
           />
         </FormGroup>
         <FormGroup>
-          <Label>ინტეგრაციის საფასური ($)</Label>
+          <Label>{t('integrationFee')}</Label>
           <FeeInput
             type="number"
             value={integrationFee}
@@ -247,21 +285,78 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
       </FormRow>
 
       <FormGroup>
-        <Label>შენიშვნები</Label>
+        <Label>{t('monthlyCost')}</Label>
+        <FeeInput
+          type="number"
+          value={monthlyCost}
+          onChange={e => setMonthlyCost(e.target.value)}
+          placeholder="0"
+          min="0"
+          step="0.01"
+        />
+      </FormGroup>
+
+      <FormRow>
+        <FormGroup>
+          <Label>{t('integrationDate')}</Label>
+          <Input
+            type="date"
+            value={integrationStartDate}
+            onChange={e => setIntegrationStartDate(e.target.value)}
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>{t('paymentDay')}</Label>
+          <FeeInput
+            type="number"
+            value={paymentDayOfMonth}
+            onChange={e => setPaymentDayOfMonth(e.target.value)}
+            placeholder="1"
+            min="1"
+            max="31"
+          />
+        </FormGroup>
+      </FormRow>
+
+      <FormGroup>
+        <CheckboxRow>
+          <input
+            type="checkbox"
+            checked={paymentDelayed}
+            onChange={e => setPaymentDelayed(e.target.checked)}
+          />
+          {t('paymentDelayed')}
+        </CheckboxRow>
+      </FormGroup>
+
+      {paymentDelayed && (
+        <FormGroup>
+          <Label>{t('delayNotes')}</Label>
+          <Textarea
+            value={paymentDelayNotes}
+            onChange={e => setPaymentDelayNotes(e.target.value)}
+            placeholder={t('delayNotes')}
+            rows={2}
+          />
+        </FormGroup>
+      )}
+
+      <FormGroup>
+        <Label>{t('notes')}</Label>
         <Textarea
           value={notes}
           onChange={e => setNotes(e.target.value)}
-          placeholder="დაამატეთ შენიშვნა ამ პროსპექტის შესახებ..."
+          placeholder={t('notes')}
           rows={3}
         />
       </FormGroup>
 
       <ButtonRow>
         <Button type="button" onClick={onCancel}>
-          გაუქმება
+          {t('cancel')}
         </Button>
         <Button type="submit" $gradient>
-          {initialData ? 'განახლება' : 'დამატება'}
+          {initialData ? t('update') : t('add')}
         </Button>
       </ButtonRow>
     </Form>

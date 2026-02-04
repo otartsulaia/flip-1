@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import { ProspectStatus, STATUS_LABELS, STATUS_COLORS } from '../types';
+import { ProspectStatus, STATUS_COLORS } from '../types';
+import { useLanguage } from '../hooks/useLanguage';
 
 const Badge = styled.span<{ $color: string }>`
   display: inline-block;
@@ -8,9 +9,11 @@ const Badge = styled.span<{ $color: string }>`
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
-  background: ${({ $color }) => $color}22;
+  background: ${({ $color }) => $color}15;
   color: ${({ $color }) => $color};
-  border: 1px solid ${({ $color }) => $color}44;
+  border: 1px solid ${({ $color }) => $color}30;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
 `;
 
 interface StatusBadgeProps {
@@ -18,9 +21,11 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
+  const { statusLabel } = useLanguage();
+
   return (
     <Badge $color={STATUS_COLORS[status]}>
-      {STATUS_LABELS[status]}
+      {statusLabel(status)}
     </Badge>
   );
 }

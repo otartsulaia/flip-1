@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useProspects } from './hooks/useProspects';
-import { Prospect, ProspectStatus, ProspectType, STATUS_LABELS, TYPE_LABELS, COUNTRIES } from './types';
+import { useLanguage } from './hooks/useLanguage';
+import { Prospect, ProspectStatus, ProspectType, STATUS_LABELS, TYPE_LABELS, COUNTRIES, getCountryByCode } from './types';
 import { ProspectForm } from './components/ProspectForm';
 import { ProspectCard } from './components/ProspectCard';
 import { Financials } from './components/Financials';
-import { Button, Input } from './styles';
+import { Button, Input, GlassCard } from './styles';
 
 const PageWrapper = styled.div`
   min-height: 100vh;
   padding: 20px;
-  max-width: 960px;
+  max-width: 1000px;
   margin: 0 auto;
 `;
 
@@ -18,15 +19,32 @@ const Header = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   flex-wrap: wrap;
   gap: 16px;
 `;
 
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 14px;
+`;
+
+const LogoImage = styled.img`
+  height: 32px;
+  width: auto;
+`;
+
+const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
 const Logo = styled.h1`
-  font-size: 24px;
-  font-weight: bold;
-  color: white;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fafafa;
   margin: 0;
   span {
     color: #10b981;
@@ -34,35 +52,53 @@ const Logo = styled.h1`
 `;
 
 const Subtitle = styled.p`
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.3);
   font-size: 13px;
   margin: 4px 0 0 0;
 `;
 
-const Stats = styled.div`
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 24px;
+const LangButton = styled.button<{ $active?: boolean }>`
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid ${({ $active }) => $active ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 255, 255, 0.08)'};
+  background: ${({ $active }) => $active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.04)'};
+  color: ${({ $active }) => $active ? '#10b981' : 'rgba(255, 255, 255, 0.5)'};
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  outline: none;
+  &:hover {
+    background: ${({ $active }) => $active ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.08)'};
+  }
 `;
 
-const StatCard = styled.div`
-  background: rgb(47 51 60);
-  padding: 14px 18px;
-  border-radius: 10px;
-  min-width: 90px;
-  flex: 1;
+const Stats = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+`;
+
+const StatCard = styled(GlassCard)`
+  padding: 16px 18px;
 `;
 
 const StatNumber = styled.div`
-  font-size: 26px;
-  font-weight: bold;
-  color: white;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fafafa;
 `;
 
 const StatLabel = styled.div`
   font-size: 11px;
-  color: #9ca3af;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const Controls = styled.div`
@@ -81,14 +117,20 @@ const SearchInput = styled(Input)`
 const FilterSelect = styled.select`
   padding: 10px 14px;
   border-radius: 10px;
-  border: none;
-  background: rgb(47 51 60);
-  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e4e4e7;
   outline: none;
   cursor: pointer;
   font-size: 13px;
+  transition: all 0.2s ease;
   &:focus {
-    background: rgb(58 63 75);
+    border-color: rgba(16, 185, 129, 0.4);
+    background: rgba(255, 255, 255, 0.08);
+  }
+  option {
+    background: #1a1d25;
+    color: #e4e4e7;
   }
 `;
 
@@ -100,7 +142,8 @@ const ProspectList = styled.div`
 const Modal = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,30 +152,34 @@ const Modal = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background: #191c23;
-  border-radius: 16px;
-  padding: 24px;
-  max-width: 520px;
+  background: rgba(20, 22, 30, 0.95);
+  backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 28px;
+  max-width: 540px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
 `;
 
 const ModalTitle = styled.h2`
-  font-size: 18px;
-  margin: 0 0 20px 0;
-  color: white;
+  font-size: 20px;
+  margin: 0 0 24px 0;
+  color: #fafafa;
+  font-weight: 600;
 `;
 
 const EmptyState = styled.div`
   text-align: center;
   padding: 60px 20px;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.3);
 `;
 
 const EmptyTitle = styled.h3`
   font-size: 18px;
-  color: #9ca3af;
+  color: rgba(255, 255, 255, 0.5);
   margin: 0 0 8px 0;
 `;
 
@@ -140,8 +187,9 @@ const TabBar = styled.div`
   display: flex;
   gap: 0;
   margin-bottom: 24px;
-  background: rgb(47 51 60);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
   overflow: hidden;
 `;
 
@@ -149,14 +197,16 @@ const Tab = styled.button<{ $active?: boolean }>`
   flex: 1;
   padding: 12px 20px;
   border: none;
-  background: ${({ $active }) => $active ? 'rgba(16, 185, 129, 0.2)' : 'transparent'};
-  color: ${({ $active }) => $active ? '#10b981' : '#9ca3af'};
-  font-weight: ${({ $active }) => $active ? '600' : '400'};
+  background: ${({ $active }) => ($active ? 'rgba(16, 185, 129, 0.15)' : 'transparent')};
+  color: ${({ $active }) => ($active ? '#10b981' : 'rgba(255, 255, 255, 0.4)')};
+  font-weight: ${({ $active }) => ($active ? '600' : '400')};
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
+  outline: none;
   &:hover {
-    background: ${({ $active }) => $active ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.05)'};
+    background: ${({ $active }) => ($active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.04)')};
+    color: ${({ $active }) => ($active ? '#10b981' : 'rgba(255, 255, 255, 0.6)')};
   }
 `;
 
@@ -164,6 +214,8 @@ type ViewTab = 'prospects' | 'financials';
 
 export function CRM() {
   const { prospects, addProspect, updateProspect, updateStatus, deleteProspect } = useProspects();
+  const { lang, setLang, t, statusLabel, typeLabel, countryName } = useLanguage();
+
   const [showForm, setShowForm] = useState(false);
   const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -189,7 +241,7 @@ export function CRM() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('ნამდვილად გსურთ წაშლა?')) {
+    if (confirm(t('confirmDelete'))) {
       deleteProspect(id);
     }
   };
@@ -207,50 +259,58 @@ export function CRM() {
 
   const wonCount = prospects.filter(p => p.status === 'won').length;
   const activeCount = prospects.filter(p => !['won', 'lost'].includes(p.status)).length;
+  const mrr = prospects
+    .filter(p => p.status === 'won')
+    .reduce((s, p) => s + (p.monthlyFee || 0), 0);
 
-  const usedCountries = [...new Set(prospects.map(p => p.country).filter(Boolean))];
+  const usedCountryCodes = [...new Set(prospects.map(p => p.country).filter(Boolean))];
 
   return (
     <PageWrapper>
       <Header>
-        <div>
-          <Logo>
-            simpler<span>.ge</span> CRM
-          </Logo>
-          <Subtitle>პროსპექტების მართვა</Subtitle>
-        </div>
-        <Button $gradient onClick={() => setShowForm(true)}>
-          + დამატება
-        </Button>
+        <HeaderLeft>
+          <LogoImage src="/simpler-logo.svg" alt="simpler.ge" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <div>
+            <Logo>
+              simpler<span>.ge</span> CRM
+            </Logo>
+            <Subtitle>{t('appSubtitle')}</Subtitle>
+          </div>
+        </HeaderLeft>
+        <HeaderRight>
+          <LangButton $active={lang === 'ka'} onClick={() => setLang('ka')}>KA</LangButton>
+          <LangButton $active={lang === 'en'} onClick={() => setLang('en')}>EN</LangButton>
+          <Button $gradient onClick={() => setShowForm(true)}>
+            {t('addProspect')}
+          </Button>
+        </HeaderRight>
       </Header>
 
       <Stats>
         <StatCard>
           <StatNumber>{prospects.length}</StatNumber>
-          <StatLabel>სულ</StatLabel>
+          <StatLabel>{t('total')}</StatLabel>
         </StatCard>
         <StatCard>
           <StatNumber>{activeCount}</StatNumber>
-          <StatLabel>აქტიური</StatLabel>
+          <StatLabel>{t('active')}</StatLabel>
         </StatCard>
         <StatCard>
           <StatNumber>{wonCount}</StatNumber>
-          <StatLabel>მოგებული</StatLabel>
+          <StatLabel>{t('won')}</StatLabel>
         </StatCard>
         <StatCard>
-          <StatNumber>
-            ${prospects.filter(p => p.status === 'won').reduce((s, p) => s + (p.monthlyFee || 0), 0).toLocaleString()}
-          </StatNumber>
+          <StatNumber>${mrr.toLocaleString()}</StatNumber>
           <StatLabel>MRR</StatLabel>
         </StatCard>
       </Stats>
 
       <TabBar>
         <Tab $active={activeTab === 'prospects'} onClick={() => setActiveTab('prospects')}>
-          პროსპექტები
+          {t('prospects')}
         </Tab>
         <Tab $active={activeTab === 'financials'} onClick={() => setActiveTab('financials')}>
-          ფინანსები
+          {t('financials')}
         </Tab>
       </TabBar>
 
@@ -261,7 +321,7 @@ export function CRM() {
           <Controls>
             <SearchInput
               type="text"
-              placeholder="ძიება..."
+              placeholder={t('search')}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
@@ -269,42 +329,44 @@ export function CRM() {
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value as ProspectStatus | 'all')}
             >
-              <option value="all">ყველა სტატუსი</option>
-              {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
+              <option value="all">{t('allStatuses')}</option>
+              {Object.keys(STATUS_LABELS).map(value => (
+                <option key={value} value={value}>
+                  {statusLabel(value)}
+                </option>
               ))}
             </FilterSelect>
             <FilterSelect
               value={typeFilter}
               onChange={e => setTypeFilter(e.target.value as ProspectType | 'all')}
             >
-              <option value="all">ყველა ტიპი</option>
-              {Object.entries(TYPE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
+              <option value="all">{t('allTypes')}</option>
+              {Object.keys(TYPE_LABELS).map(value => (
+                <option key={value} value={value}>
+                  {typeLabel(value)}
+                </option>
               ))}
             </FilterSelect>
-            {usedCountries.length > 0 && (
-              <FilterSelect
-                value={countryFilter}
-                onChange={e => setCountryFilter(e.target.value)}
-              >
-                <option value="all">ყველა ქვეყანა</option>
-                {usedCountries.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </FilterSelect>
-            )}
+            <FilterSelect
+              value={countryFilter}
+              onChange={e => setCountryFilter(e.target.value)}
+            >
+              <option value="all">{t('allCountries')}</option>
+              {COUNTRIES.map(c => (
+                <option key={c.code} value={c.code}>
+                  {c.flag} {countryName(c)}
+                </option>
+              ))}
+            </FilterSelect>
           </Controls>
 
           {filteredProspects.length === 0 ? (
             <EmptyState>
               <EmptyTitle>
-                {prospects.length === 0 ? 'პროსპექტები ჯერ არ არის' : 'შედეგი ვერ მოიძებნა'}
+                {prospects.length === 0 ? t('noProspects') : t('noResults')}
               </EmptyTitle>
               <p>
-                {prospects.length === 0
-                  ? 'დაამატეთ პირველი პროსპექტი დასაწყებად.'
-                  : 'სცადეთ ძიების ან ფილტრის შეცვლა.'}
+                {prospects.length === 0 ? t('addFirst') : t('tryAdjust')}
               </p>
             </EmptyState>
           ) : (
@@ -326,7 +388,7 @@ export function CRM() {
       {(showForm || editingProspect) && (
         <Modal onClick={() => { setShowForm(false); setEditingProspect(null); }}>
           <ModalContent onClick={e => e.stopPropagation()}>
-            <ModalTitle>{editingProspect ? 'პროსპექტის რედაქტირება' : 'ახალი პროსპექტი'}</ModalTitle>
+            <ModalTitle>{editingProspect ? t('editProspect') : t('newProspect')}</ModalTitle>
             <ProspectForm
               onSubmit={editingProspect ? handleUpdateProspect : handleAddProspect}
               onCancel={() => { setShowForm(false); setEditingProspect(null); }}
