@@ -39,8 +39,11 @@ const ButtonRow = styled.div`
 const LogoPreview = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin-top: 4px;
+  flex-wrap: wrap;
+  max-height: 120px;
+  overflow-y: auto;
 `;
 
 const LogoImg = styled.img`
@@ -122,17 +125,21 @@ export function ProspectForm({ onSubmit, onCancel, initialData }: ProspectFormPr
         `${base}.org`,
         `${base}.net`,
       ];
-      // Generate URLs from multiple sources for better reliability
+      // Use multiple logo APIs for reliability
       const urls = [
         ...domains.map(d => `https://logo.clearbit.com/${d}`),
-        ...domains.map(d => `https://www.google.com/s2/favicons?domain=${d}&sz=128`),
+        ...domains.map(d => `https://icon.horse/icon/${d}`),
+        ...domains.map(d => `https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${d}&size=128`),
       ];
-      // Preload each image and only keep ones that successfully load
+      // Preload each image and only keep ones that load with real content
       setLoadedLogos([]);
       urls.forEach(url => {
         const img = new Image();
         img.onload = () => {
-          setLoadedLogos(prev => prev.includes(url) ? prev : [...prev, url]);
+          // Filter out tiny default/placeholder icons (< 32px)
+          if (img.naturalWidth >= 32 && img.naturalHeight >= 32) {
+            setLoadedLogos(prev => prev.includes(url) ? prev : [...prev, url]);
+          }
         };
         img.src = url;
       });
