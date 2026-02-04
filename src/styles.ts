@@ -1,8 +1,8 @@
-import styled, { createGlobalStyle, css } from 'styled-components'
+import styled, { createGlobalStyle, css } from 'styled-components';
 
-export const MOBILE = '@media (min-width: 400px)'
-export const TABLET = '@media (min-width: 750px)'
-export const DESKTOP = '@media (min-width: 1280px)'
+export const MOBILE = '@media (min-width: 400px)';
+export const TABLET = '@media (min-width: 750px)';
+export const DESKTOP = '@media (min-width: 1280px)';
 
 export const GlobalStyle = createGlobalStyle`
   * {
@@ -14,21 +14,20 @@ export const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
     color: white;
-    text-align: center;
     background: #090a0d;
     cursor: default;
   }
   h1, h2, h3, h4 {
     margin: 0;
   }
-  body, input, button, textarea, pre {
+  body, input, button, textarea, pre, select {
     font-family: 'Roboto Mono', sans-serif;
     font-size: 14px;
   }
   #root {
     height: 100%;
   }
-`
+`;
 
 const InputCSS = css`
   padding: 15px;
@@ -43,73 +42,31 @@ const InputCSS = css`
   &:focus {
     background: rgb(58 63 75);
   }
-`
+  &::placeholder {
+    color: #6b7280;
+  }
+`;
 
 export const Input = styled.input`
   height: 50px;
   ${InputCSS}
-`
+`;
 
 export const Textarea = styled.textarea`
   ${InputCSS}
   resize: vertical;
-`
-
-export const Container = styled.div`
-  height: 100%;
-  width: 100%;
-  ${MOBILE} {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-`
-
-export const Wrapper = styled.div`
-  padding: 20px;
-  display: grid;
-  gap: 20px;
-  max-width: 100%;
-  width: 100%;
-  border-radius: 20px;
-  position: absolute;
-  bottom: 0;
-  ${MOBILE} {
-    min-width: 320px;
-    position: relative;
-  }
-  background: #191c23;
-  color: white;
-`
-
-export const Controls = styled.div`
-  display: grid;
-  gap: 20px;
-`
-
-export const ButtonGroup = styled.div`
-  display: flex;
-  gap: 10px;
-  & > * {
-    flex-grow: 1;
-  }
-`
-
-export const Balance = styled.div`
-  display: flex;
-  justify-content: space-between;
-`
+`;
 
 export const ButtonCSS = css<{$gradient?: boolean}>`
-  padding: 15px;
+  padding: 12px 20px;
   color: white;
   background: rgba(47, 51, 60, 1);
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  min-width: 100px;
   transition: background .1s;
   outline: none;
+  font-weight: 500;
   &:hover, &:focus {
     background: rgba(58, 63, 75, 1);
   }
@@ -118,38 +75,19 @@ export const ButtonCSS = css<{$gradient?: boolean}>`
     background: rgba(58, 63, 75, .1)!important;
   }
   ${({ $gradient }) => $gradient && `
-    transition: background .5s;
-    background-image: linear-gradient(90deg,rgba(31,162,16,1) -0%,rgba(21,213,82,1) 48%,rgba(19,195,75,1) 100%);
+    background-image: linear-gradient(90deg, #059669 0%, #10b981 50%, #34d399 100%);
     &:hover, &:focus {
-      background-image: linear-gradient(90deg,rgba(31,162,16,1) -25%,rgba(21,213,82,1) 48%,rgba(19,195,75,1) 125%);
+      background-image: linear-gradient(90deg, #047857 0%, #059669 50%, #10b981 100%);
     }
   `}
-`
+`;
 
 export const Button = styled.button`
   ${ButtonCSS}
-`
+`;
 
 export const SmallButton = styled.button`
   ${ButtonCSS}
-  padding: 2.5px 5px;
-  min-width: unset;
+  padding: 6px 12px;
   font-size: 12px;
-`
-
-export const Amount = styled.div<{$value: number}>`
-  color: ${({ $value }) => $value >= 0 ? '#00ff83' : '#ff2862'};
-  font-weight: bold;
-`
-
-export const CanvasWrapper = styled.div`
-  width: 100%;
-  height: 75%;
-  position: fixed;
-  left: 0;
-  top: 0;
-  ${MOBILE} {
-    position: relative;
-    height: 320px;
-  }
-`
+`;
