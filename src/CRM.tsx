@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useProspects } from './hooks/useProspects';
 import { useLanguage } from './hooks/useLanguage';
-import { Prospect, ProspectStatus, ProspectType, STATUS_LABELS, TYPE_LABELS, COUNTRIES, getCountryByCode } from './types';
+import { useSettings } from './hooks/useSettings';
+import { Prospect, ProspectStatus, ProspectType, STATUS_LABELS, TYPE_LABELS, COUNTRIES, AppUser } from './types';
 import { ProspectForm } from './components/ProspectForm';
 import { ProspectCard } from './components/ProspectCard';
 import { Financials } from './components/Financials';
@@ -39,6 +40,7 @@ const HeaderRight = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 `;
 
 const Logo = styled.h1`
@@ -249,11 +251,85 @@ const Tab = styled.button<{ $active?: boolean }>`
   }
 `;
 
-type ViewTab = 'prospects' | 'financials';
+const UserBadge = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+`;
 
-export function CRM() {
+const LogoutBtn = styled.button`
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 59, 48, 0.2);
+  background: rgba(255, 59, 48, 0.08);
+  color: #FF3B30;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.2s ease;
+  &:hover {
+    background: rgba(255, 59, 48, 0.15);
+    border-color: rgba(255, 59, 48, 0.3);
+  }
+`;
+
+const SettingsCard = styled(GlassCard)`
+  margin-bottom: 24px;
+`;
+
+const SettingsRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+`;
+
+const SettingsLabel = styled.label`
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+`;
+
+const SettingsInput = styled.input`
+  width: 80px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e4e4e7;
+  font-size: 14px;
+  outline: none;
+  text-align: center;
+  &:focus {
+    border-color: rgba(0, 122, 255, 0.5);
+  }
+`;
+
+const SettingsTitle = styled.h3`
+  font-size: 15px;
+  color: #fafafa;
+  margin: 0 0 14px 0;
+  font-weight: 600;
+`;
+
+type ViewTab = 'prospects' | 'financials' | 'settings';
+
+interface CRMProps {
+  user: AppUser;
+  onLogout: () => void;
+}
+
+export function CRM({ user, onLogout }: CRMProps) {
   const { prospects, addProspect, updateProspect, updateStatus, deleteProspect } = useProspects();
   const { lang, setLang, t, statusLabel, typeLabel, countryName } = useLanguage();
+  const { settings, updateSettings } = useSettings();
 
   const [showForm, setShowForm] = useState(false);
   const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
@@ -262,6 +338,15 @@ export function CRM() {
   const [typeFilter, setTypeFilter] = useState<ProspectType | 'all'>('all');
   const [countryFilter, setCountryFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<ViewTab>('prospects');
+  const [kzShareInput, setKzShareInput] = useState(settings.kzProfitSharePercent.toString());
+
+  const isAdmin = user.role === 'admin';
+  const isKzManager = user.role === 'kz_manager';
+
+  // Filter prospects based on role
+  const roleProspects = isKzManager
+    ? prospects.filter(p => p.country === 'KZ')
+    : prospects;
 
   const handleAddProspect = (data: Omit<Prospect, 'id' | 'createdAt' | 'updatedAt'>) => {
     addProspect(data);
@@ -295,7 +380,7 @@ export function CRM() {
   };
 
   const handleExport = () => {
-    const blob = new Blob([JSON.stringify(prospects, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(roleProspects, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -304,7 +389,13 @@ export function CRM() {
     URL.revokeObjectURL(url);
   };
 
-  const filteredProspects = prospects.filter(p => {
+  const handleSaveSettings = () => {
+    const val = Math.max(0, Math.min(100, parseFloat(kzShareInput) || 0));
+    setKzShareInput(val.toString());
+    updateSettings({ kzProfitSharePercent: val });
+  };
+
+  const filteredProspects = roleProspects.filter(p => {
     const matchesSearch =
       p.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.contactName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -315,13 +406,11 @@ export function CRM() {
     return matchesSearch && matchesStatus && matchesType && matchesCountry;
   });
 
-  const wonCount = prospects.filter(p => p.status === 'won').length;
-  const activeCount = prospects.filter(p => !['won', 'lost'].includes(p.status)).length;
-  const mrr = prospects
+  const wonCount = roleProspects.filter(p => p.status === 'won').length;
+  const activeCount = roleProspects.filter(p => !['won', 'lost'].includes(p.status)).length;
+  const mrr = roleProspects
     .filter(p => p.status === 'won')
     .reduce((s, p) => s + (p.monthlyFee || 0), 0);
-
-  const usedCountryCodes = [...new Set(prospects.map(p => p.country).filter(Boolean))];
 
   return (
     <PageWrapper>
@@ -336,19 +425,23 @@ export function CRM() {
           </div>
         </HeaderLeft>
         <HeaderRight>
+          <UserBadge>{user.displayName}</UserBadge>
           <LangButton $active={lang === 'ka'} onClick={() => setLang('ka')}>KA</LangButton>
           <LangButton $active={lang === 'en'} onClick={() => setLang('en')}>EN</LangButton>
           <Button $gradient onClick={() => setShowForm(true)}>
             {t('addProspect')}
           </Button>
+          <LogoutBtn onClick={onLogout}>{t('logout')}</LogoutBtn>
         </HeaderRight>
       </Header>
 
       <QuickActionsBar>
         <QuickActionsLabel>{t('quickActions')}</QuickActionsLabel>
-        <QuickActionButton onClick={() => window.open('https://business.tbcbank.ge', '_blank')}>
-          {t('openTBC')}
-        </QuickActionButton>
+        {isAdmin && (
+          <QuickActionButton onClick={() => window.open('https://business.tbcbank.ge', '_blank')}>
+            {t('openTBC')}
+          </QuickActionButton>
+        )}
         <QuickActionButton onClick={() => window.open('https://dashboard.keepz.me', '_blank')}>
           {t('openKeepz')}
         </QuickActionButton>
@@ -359,7 +452,7 @@ export function CRM() {
 
       <Stats>
         <StatCard>
-          <StatNumber>{prospects.length}</StatNumber>
+          <StatNumber>{roleProspects.length}</StatNumber>
           <StatLabel>{t('total')}</StatLabel>
         </StatCard>
         <StatCard>
@@ -383,10 +476,37 @@ export function CRM() {
         <Tab $active={activeTab === 'financials'} onClick={() => setActiveTab('financials')}>
           {t('financials')}
         </Tab>
+        {isAdmin && (
+          <Tab $active={activeTab === 'settings'} onClick={() => setActiveTab('settings')}>
+            {t('settings')}
+          </Tab>
+        )}
       </TabBar>
 
       {activeTab === 'financials' ? (
-        <Financials prospects={prospects} />
+        <Financials
+          prospects={roleProspects}
+          userRole={user.role}
+          kzProfitSharePercent={settings.kzProfitSharePercent}
+        />
+      ) : activeTab === 'settings' && isAdmin ? (
+        <SettingsCard>
+          <SettingsTitle>{t('settings')}</SettingsTitle>
+          <SettingsRow>
+            <SettingsLabel>{t('kzProfitShare')}</SettingsLabel>
+            <SettingsInput
+              type="number"
+              min="0"
+              max="100"
+              value={kzShareInput}
+              onChange={e => setKzShareInput(e.target.value)}
+            />
+            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>%</span>
+            <Button $gradient onClick={handleSaveSettings} style={{ padding: '8px 18px', fontSize: 13 }}>
+              {t('saveSettings')}
+            </Button>
+          </SettingsRow>
+        </SettingsCard>
       ) : (
         <>
           <Controls>
@@ -418,26 +538,28 @@ export function CRM() {
                 </option>
               ))}
             </FilterSelect>
-            <FilterSelect
-              value={countryFilter}
-              onChange={e => setCountryFilter(e.target.value)}
-            >
-              <option value="all">{t('allCountries')}</option>
-              {COUNTRIES.map(c => (
-                <option key={c.code} value={c.code}>
-                  {c.flag} {countryName(c)}
-                </option>
-              ))}
-            </FilterSelect>
+            {!isKzManager && (
+              <FilterSelect
+                value={countryFilter}
+                onChange={e => setCountryFilter(e.target.value)}
+              >
+                <option value="all">{t('allCountries')}</option>
+                {COUNTRIES.map(c => (
+                  <option key={c.code} value={c.code}>
+                    {c.flag} {countryName(c)}
+                  </option>
+                ))}
+              </FilterSelect>
+            )}
           </Controls>
 
           {filteredProspects.length === 0 ? (
             <EmptyState>
               <EmptyTitle>
-                {prospects.length === 0 ? t('noProspects') : t('noResults')}
+                {roleProspects.length === 0 ? t('noProspects') : t('noResults')}
               </EmptyTitle>
               <p>
-                {prospects.length === 0 ? t('addFirst') : t('tryAdjust')}
+                {roleProspects.length === 0 ? t('addFirst') : t('tryAdjust')}
               </p>
             </EmptyState>
           ) : (

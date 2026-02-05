@@ -9,6 +9,17 @@ export type ProspectStatus =
 
 export type ProspectType = 'business' | 'government';
 export type Language = 'ka' | 'en';
+export type UserRole = 'admin' | 'kz_manager';
+
+export interface AppUser {
+  username: string;
+  role: UserRole;
+  displayName: string;
+}
+
+export interface CRMSettings {
+  kzProfitSharePercent: number; // 0-100
+}
 
 export interface CostHistoryEntry {
   date: string;
@@ -161,4 +172,15 @@ export const T: Record<TranslationKey, { ka: string; en: string }> = {
   changeCost: { ka: '\u10EE\u10D0\u10E0\u10EF\u10D8\u10E1 \u10EA\u10D5\u10DA\u10D8\u10DA\u10D4\u10D1\u10D0', en: 'Change Cost' },
   currentCost: { ka: '\u10DB\u10D8\u10DB\u10D3\u10D8\u10DC\u10D0\u10E0\u10D4 \u10EE\u10D0\u10E0\u10EF\u10D8', en: 'Current Cost' },
   quickActions: { ka: '\u10E1\u10EC\u10E0\u10D0\u10E4\u10D8 \u10DB\u10DD\u10E5\u10DB\u10D4\u10D3\u10D4\u10D1\u10D4\u10D1\u10D8', en: 'Quick Actions' },
+  login: { ka: '\u10E8\u10D4\u10E1\u10D5\u10DA\u10D0', en: 'Log In' },
+  logout: { ka: '\u10D2\u10D0\u10E1\u10D5\u10DA\u10D0', en: 'Log Out' },
+  username: { ka: '\u10DB\u10DD\u10DB\u10EE\u10DB\u10D0\u10E0\u10D4\u10D1\u10D4\u10DA\u10D8', en: 'Username' },
+  password: { ka: '\u10DE\u10D0\u10E0\u10DD\u10DA\u10D8', en: 'Password' },
+  loginError: { ka: '\u10D0\u10E0\u10D0\u10E1\u10EC\u10DD\u10E0\u10D8 \u10DB\u10DD\u10DB\u10EE\u10DB\u10D0\u10E0\u10D4\u10D1\u10D4\u10DA\u10D8 \u10D0\u10DC \u10DE\u10D0\u10E0\u10DD\u10DA\u10D8', en: 'Invalid username or password' },
+  settings: { ka: '\u10DE\u10D0\u10E0\u10D0\u10DB\u10D4\u10E2\u10E0\u10D4\u10D1\u10D8', en: 'Settings' },
+  kzProfitShare: { ka: '\u10E7\u10D0\u10D6\u10D0\u10EE\u10D4\u10D7\u10D8\u10E1 \u10DE\u10D0\u10E0\u10E2\u10DC\u10D8\u10DD\u10E0\u10D8\u10E1 %', en: 'KZ Partner Profit Share %' },
+  kzPartnerProfit: { ka: '\u10DE\u10D0\u10E0\u10E2\u10DC\u10D8\u10DD\u10E0\u10D8\u10E1 \u10DB\u10DD\u10D2\u10D4\u10D1\u10D0', en: 'Partner Profit' },
+  yourShare: { ka: '\u10D7\u10E5\u10D5\u10D4\u10DC\u10D8 \u10EC\u10D8\u10DA\u10D8', en: 'Your Share' },
+  saveSettings: { ka: '\u10E8\u10D4\u10DC\u10D0\u10EE\u10D5\u10D0', en: 'Save' },
+  loggedInAs: { ka: '\u10E8\u10D4\u10E1\u10E3\u10DA\u10D8 \u10E0\u10DD\u10D2\u10DD\u10E0\u10EA:', en: 'Logged in as:' },
 };
