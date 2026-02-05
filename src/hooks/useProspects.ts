@@ -90,7 +90,7 @@ export function useProspects() {
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load prospects on mount
+  // Load prospects on mount, migrate localStorage data to Supabase if needed
   useEffect(() => {
     let cancelled = false;
 
@@ -103,8 +103,29 @@ export function useProspects() {
             .order('created_at', { ascending: false });
 
           if (error) throw error;
-          if (!cancelled && data) {
-            setProspects(data.map((row: Record<string, unknown>) => toCamelCase(row)));
+
+          const dbProspects = data ? data.map((row: Record<string, unknown>) => toCamelCase(row)) : [];
+
+          // Migrate localStorage data to Supabase if DB is empty but localStorage has data
+          const localProspects = loadFromLocalStorage();
+          if (dbProspects.length === 0 && localProspects.length > 0) {
+            console.log(`Migrating ${localProspects.length} prospects from localStorage to Supabase...`);
+            const rows = localProspects.map(p => toSnakeCase(p));
+            const { error: insertError } = await supabase
+              .from('prospects')
+              .insert(rows);
+            if (insertError) {
+              console.error('Migration failed:', insertError);
+            } else {
+              console.log('Migration complete!');
+            }
+            if (!cancelled) {
+              setProspects(localProspects);
+            }
+          } else {
+            if (!cancelled) {
+              setProspects(dbProspects);
+            }
           }
         } catch (err) {
           console.error('Failed to load from Supabase, falling back to localStorage:', err);
