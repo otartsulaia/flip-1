@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Prospect } from '../types';
+import { Prospect, UserRole } from '../types';
 import { GlassCard } from '../styles';
 import { useLanguage } from '../hooks/useLanguage';
 
@@ -55,10 +55,15 @@ const MetricSub = styled.div`
 
 interface FinancialsProps {
   prospects: Prospect[];
+  userRole: UserRole;
+  kzProfitSharePercent: number;
 }
 
-export function Financials({ prospects }: FinancialsProps) {
+export function Financials({ prospects, userRole, kzProfitSharePercent }: FinancialsProps) {
   const { t } = useLanguage();
+
+  const isKzManager = userRole === 'kz_manager';
+  const isAdmin = userRole === 'admin';
 
   const won = prospects.filter(p => p.status === 'won');
   const active = prospects.filter(p => !['won', 'lost'].includes(p.status));
@@ -115,6 +120,42 @@ export function Financials({ prospects }: FinancialsProps) {
   // Number of delayed payments
   const delayedCount = won.filter(p => p.paymentDelayed).length;
 
+  // KZ partner profit share
+  const kzShareAmount = netProfit * (kzProfitSharePercent / 100);
+
+  // For admin view: calculate KZ-specific financials
+  const kzWon = won.filter(p => p.country === 'KZ');
+  const kzMRR = kzWon.reduce((sum, p) => sum + (p.monthlyFee || 0), 0);
+  const kzCollected = kzWon.reduce((sum, p) => {
+    if (!p.integrationStartDate) return sum + (p.integrationFee || 0);
+    const start = new Date(p.integrationStartDate);
+    const now = new Date();
+    const diffMs = now.getTime() - start.getTime();
+    const months = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.44));
+    return sum + (months * (p.monthlyFee || 0)) + (p.integrationFee || 0);
+  }, 0);
+  const kzCosts = kzWon.reduce((sum, p) => {
+    if (!p.integrationStartDate) return sum;
+    const history = p.costHistory || [];
+    if (history.length > 0) {
+      let costTotal = 0;
+      for (let i = 0; i < history.length; i++) {
+        const startDate = new Date(history[i].date);
+        const endDate = i < history.length - 1 ? new Date(history[i + 1].date) : new Date();
+        const months = Math.max(0, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)));
+        costTotal += months * history[i].amount;
+      }
+      return sum + costTotal;
+    }
+    const start = new Date(p.integrationStartDate);
+    const now = new Date();
+    const diffMs = now.getTime() - start.getTime();
+    const months = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.44));
+    return sum + (months * (p.monthlyCost || 0));
+  }, 0);
+  const kzNetProfit = kzCollected - kzCosts;
+  const kzPartnerAmount = kzNetProfit * (kzProfitSharePercent / 100);
+
   return (
     <Wrapper>
       <Title>{t('financials')}</Title>
@@ -163,6 +204,31 @@ export function Financials({ prospects }: FinancialsProps) {
             <MetricValue $color="#FF3B30">{delayedCount}</MetricValue>
             <MetricSub>{t('delayed')}</MetricSub>
           </Metric>
+        )}
+
+        {/* KZ Manager sees their profit share */}
+        {isKzManager && (
+          <Metric>
+            <MetricLabel>{t('yourShare')} ({kzProfitSharePercent}%)</MetricLabel>
+            <MetricValue $color="#AF52DE">${kzShareAmount.toLocaleString()}</MetricValue>
+            <MetricSub>{kzProfitSharePercent}% {t('netProfit')}</MetricSub>
+          </Metric>
+        )}
+
+        {/* Admin sees KZ partner breakdown */}
+        {isAdmin && kzWon.length > 0 && (
+          <>
+            <Metric>
+              <MetricLabel>KZ MRR</MetricLabel>
+              <MetricValue $color="#AF52DE">${kzMRR.toLocaleString()}</MetricValue>
+              <MetricSub>{kzWon.length} KZ {t('prospects')}</MetricSub>
+            </Metric>
+            <Metric>
+              <MetricLabel>{t('kzPartnerProfit')} ({kzProfitSharePercent}%)</MetricLabel>
+              <MetricValue $color="#AF52DE">${kzPartnerAmount.toLocaleString()}</MetricValue>
+              <MetricSub>{kzProfitSharePercent}% of ${kzNetProfit.toLocaleString()} KZ {t('netProfit')}</MetricSub>
+            </Metric>
+          </>
         )}
       </Grid>
     </Wrapper>
